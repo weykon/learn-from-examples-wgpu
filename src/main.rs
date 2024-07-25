@@ -1,9 +1,8 @@
 use std::sync::{Arc, Mutex};
 use winit::{
-    application::ApplicationHandler,
     dpi::PhysicalSize,
     event_loop::{self, EventLoop},
-    window::{Window, WindowAttributes},
+    window::Window,
 };
 mod model;
 mod studio;
@@ -18,6 +17,7 @@ enum GameEntry {
     Loading,
     Ready(Game),
 }
+
 struct Game {
     window: Arc<Window>,
     context: Arc<Mutex<gfx::GfxContext>>,
@@ -42,82 +42,14 @@ impl Game {
         let mut studio_var = studio::Studio::new(context);
 
         studio_var.add_scene::<studio::cube::CubeScene>();
-        studio_var.add_scene::<studio::instances::InstanceScene>();
-        studio_var.initialize_scene(0);
+        studio_var.add_scene::<studio::bunnymark::BunnyMarkScene>();
+        studio_var.add_scene::<studio::texture_example::TextureExample>();
+        studio_var.initialize_scene(2);
         self.studio = Some(studio_var);
     }
 }
 
-impl ApplicationHandler for GameEntry {
-    fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
-        println!("Resumed");
-        match self {
-            GameEntry::Ready(game) => {
-                // game.resumed(event_loop);
-            }
-            GameEntry::Loading => {
-                let window = Arc::new(
-                    event_loop
-                        .create_window(WindowAttributes::default())
-                        .unwrap(),
-                );
-                pollster::block_on(async move {
-                    println!("in async : Loading");
-                    let context = gfx::GfxContext::new(window.clone()).await;
-                    let context = Arc::new(Mutex::new(context));
-                    let game = Game {
-                        window,
-                        context: context.clone(),
-                        studio: None,
-                    };
-                    *self = GameEntry::Ready(game);
-                    println!("in async : Ready");
-                });
-            }
-        }
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &event_loop::ActiveEventLoop,
-        window_id: winit::window::WindowId,
-        event: winit::event::WindowEvent,
-    ) {
-        if let GameEntry::Ready(game) = self {
-            match event {
-                winit::event::WindowEvent::Resized(size) => {
-                    println!("Resized");
-                    game.bridge_with_gfx(size);
-                    // now arrivate the normal full size in window
-                    game.list_painter();
-                    game.window.request_redraw();
-                }
-                winit::event::WindowEvent::Moved(_) => {
-                    println!("Moved")
-                }
-                winit::event::WindowEvent::CloseRequested => {
-                    println!("CloseRequested")
-                }
-                winit::event::WindowEvent::Destroyed => {
-                    println!("Destroyed")
-                }
-                winit::event::WindowEvent::Focused(_) => {
-                    println!("Focused")
-                }
-                winit::event::WindowEvent::KeyboardInput {
-                    device_id,
-                    event,
-                    is_synthetic,
-                } => {}
-                winit::event::WindowEvent::RedrawRequested => {
-                    println!("RedrawRequested");
-                    game.studio.as_ref().unwrap().render_current_scene();
-                }
-                _ => {}
-            }
-        }
-    }
-}
+mod game_event_handle;
 
 mod painter;
 

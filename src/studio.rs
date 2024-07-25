@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     cell::RefCell,
     rc::Rc,
     sync::{Arc, Mutex},
@@ -7,17 +8,19 @@ use std::{
 // 画室
 // Gallery
 use crate::{
-    gfx::{self, GfxContext},
+    gfx::{self},
     painter::{Painter, Sandy},
 };
+pub mod bunnymark;
 pub mod cube;
 pub mod instances;
+pub mod texture_example;
+
 pub struct Studio {
     context: Arc<Mutex<gfx::GfxContext>>,
     ready_functions: Vec<Box<dyn Fn(&gfx::GfxContext) -> Box<dyn Painter>>>,
     current_scene: Option<Rc<RefCell<Box<dyn Painter>>>>,
 }
-
 impl Studio {
     pub fn new(context: Arc<Mutex<gfx::GfxContext>>) -> Self {
         Studio {
@@ -29,10 +32,10 @@ impl Studio {
 
     pub fn add_scene<T>(&mut self)
     where
-        T: Sandy + Painter + 'static,
+        T: Sandy<Extra = ()> + Painter + 'static,
     {
         self.ready_functions.push(Box::new(|context| {
-            let scene = T::ready(context);
+            let scene = T::ready(context, ());
             Box::new(scene) as Box<dyn Painter>
         }));
     }
@@ -48,7 +51,7 @@ impl Studio {
     pub fn render_current_scene(&self) {
         if let Some(scene) = &self.current_scene {
             let context = self.context.lock().unwrap();
-            scene.borrow().paint(&context);
+            scene.borrow_mut().paint(&context);
         }
     }
 }

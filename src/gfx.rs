@@ -1,10 +1,6 @@
-use wgpu::RequestAdapterOptions;
-
-use winit::window::Window;
-
 use std::sync::Arc;
-
-use wgpu::Surface;
+use wgpu::RequestAdapterOptions;
+use winit::window::Window;
 
 pub(crate) struct GfxContext {
     pub(crate) adapter: wgpu::Adapter,

@@ -1,22 +1,25 @@
-use model::create_texels;
-use model::create_vertices;
-use wgpu::util::DeviceExt;
-use wgpu::Texture;
-use wgpu::TextureView;
-use std::borrow::Cow;
-use model::generate_matrix;
+use super::gfx::GfxContext;
 use crate::gfx;
 use crate::model;
 use crate::utils::Vertex;
-use super::gfx::GfxContext;
+use model::create_texels;
+use model::create_vertices;
+use model::generate_matrix;
+use std::borrow::Cow;
+use wgpu::util::DeviceExt;
 use wgpu::Buffer;
 use wgpu::PipelineLayout;
+use wgpu::Texture;
+use wgpu::TextureView;
 
 pub trait Painter {
-    fn paint(&self, context: &gfx::GfxContext);
+    fn paint(&mut self, context: &gfx::GfxContext);
 }
 pub(crate) trait Sandy {
-    fn ready(context: &gfx::GfxContext) -> Self where Self: Sized;
+    type Extra;
+    fn ready(context: &gfx::GfxContext, extra: Self::Extra) -> Self
+    where
+        Self: Sized;
 }
 
 pub(crate) struct VertexBuff {

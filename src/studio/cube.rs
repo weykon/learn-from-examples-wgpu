@@ -3,7 +3,10 @@ use std::borrow::Cow;
 use wgpu::{util::DeviceExt, Buffer, PipelineLayout};
 
 use crate::{
-    gfx::{self, GfxContext}, model::{create_texels, create_vertices, generate_matrix}, painter::{Sandy, TextureBuff, VertexBuff}, utils::{self, Vertex}
+    gfx::{self, GfxContext},
+    model::{create_texels, create_vertices, generate_matrix},
+    painter::{Sandy, TextureBuff, VertexBuff},
+    utils::{self, Vertex},
 };
 
 use super::Painter;
@@ -18,9 +21,10 @@ pub(crate) struct CubeScene {
 }
 
 impl Sandy for CubeScene {
-    fn ready(context: &gfx::GfxContext) -> Self {
+    type Extra = ();
+    fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         // vertex_buf, index_buf, vertex_size
-        let vertex_source = VertexBuff::ready(context);
+        let vertex_source = VertexBuff::ready(context,());
         let vertex_buffers_layout = [wgpu::VertexBufferLayout {
             array_stride: vertex_source.vertex_size as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -39,7 +43,7 @@ impl Sandy for CubeScene {
         }];
 
         // texture, texels, size
-        let texture_source = TextureBuff::ready(context);
+        let texture_source = TextureBuff::ready(context,());
 
         // Create other resources
         let config = context.surface_config.as_ref().unwrap();
@@ -112,7 +116,7 @@ impl Sandy for CubeScene {
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: None,
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shader.wgsl"))),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader/cube.wgsl"))),
             });
 
         let pipeline = context
@@ -153,7 +157,7 @@ impl Sandy for CubeScene {
 }
 
 impl Painter for CubeScene {
-    fn paint(&self, context: &gfx::GfxContext) {
+    fn paint(&mut self, context: &gfx::GfxContext) {
         let frame = context.surface.get_current_texture().unwrap();
         let view = frame
             .texture
@@ -204,7 +208,8 @@ impl Painter for CubeScene {
 }
 
 impl Sandy for VertexBuff {
-    fn ready(context: &gfx::GfxContext) -> Self {
+    type Extra = ();
+    fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         use wgpu::util::DeviceExt;
         // ready vertex buffer
         let vertex_size: usize = std::mem::size_of::<utils::Vertex>();
@@ -235,7 +240,8 @@ impl Sandy for VertexBuff {
 }
 
 impl Sandy for TextureBuff {
-    fn ready(context: &gfx::GfxContext) -> Self {
+    type Extra = ();
+    fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         let size = 256u32;
         let texels = create_texels(size as usize);
         let texture_extent = wgpu::Extent3d {
