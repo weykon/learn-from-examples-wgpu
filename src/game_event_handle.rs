@@ -4,7 +4,11 @@ use crate::gfx;
 use std::sync::Arc;
 use std::sync::Mutex;
 use winit::application::ApplicationHandler;
+use winit::event::ElementState;
+use winit::event::KeyEvent;
 use winit::event_loop;
+use winit::keyboard;
+use winit::keyboard::KeyCode;
 use winit::window::WindowAttributes;
 
 impl ApplicationHandler for GameEntry {
@@ -24,11 +28,7 @@ impl ApplicationHandler for GameEntry {
                     println!("in async : Loading");
                     let context = gfx::GfxContext::new(window.clone()).await;
                     let context = Arc::new(Mutex::new(context));
-                    let game = Game {
-                        window,
-                        context: context.clone(),
-                        studio: None,
-                    };
+                    let game = Game::new(window, context.clone());
                     *self = GameEntry::Ready(game);
                     println!("in async : Ready");
                 });
@@ -63,11 +63,21 @@ impl ApplicationHandler for GameEntry {
                 winit::event::WindowEvent::Focused(_) => {
                     println!("Focused")
                 }
-                winit::event::WindowEvent::KeyboardInput {
-                    device_id,
-                    event,
-                    is_synthetic,
-                } => {}
+                winit::event::WindowEvent::KeyboardInput { event, .. } => match event {
+                    KeyEvent {
+                        physical_key,
+                        state,
+                        ..
+                    } => {
+                        if state == ElementState::Pressed {
+                            println!("KeyboardInput: {:?}", physical_key);
+                            if physical_key == keyboard::PhysicalKey::Code(KeyCode::Space) {
+                                game.mount_next_scene();
+                                game.window.request_redraw();
+                            }
+                        }
+                    }
+                },
                 winit::event::WindowEvent::RedrawRequested => {
                     println!("RedrawRequested");
                     game.studio.as_ref().unwrap().render_current_scene();

@@ -4,10 +4,10 @@ use wgpu::util::DeviceExt;
 
 use crate::painter::{Painter, Sandy};
 
-pub  struct TextureExample {
-  pub    bind_group: wgpu::BindGroup,
-  pub    pipeline: wgpu::RenderPipeline,
-  pub    vertex_buffer: wgpu::Buffer,
+pub struct TextureExample {
+    pub bind_group: wgpu::BindGroup,
+    pub pipeline: wgpu::RenderPipeline,
+    pub vertex_buffer: wgpu::Buffer,
 }
 impl Sandy for TextureExample {
     type Extra = ();

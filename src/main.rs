@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    sync::{Arc, Mutex},
+};
 use winit::{
     dpi::PhysicalSize,
     event_loop::{self, EventLoop},
@@ -6,6 +9,7 @@ use winit::{
 };
 mod model;
 mod studio;
+mod time_world;
 
 fn main() {
     let event_loop = EventLoop::new().unwrap();
@@ -18,10 +22,11 @@ enum GameEntry {
     Ready(Game),
 }
 
-struct Game {
-    window: Arc<Window>,
-    context: Arc<Mutex<gfx::GfxContext>>,
-    studio: Option<studio::Studio>,
+pub struct Game {
+    pub window: Arc<Window>,
+    pub(crate) context: Arc<Mutex<gfx::GfxContext>>,
+    pub studio: Option<studio::Studio>,
+    pub scene_index: usize,
 }
 
 mod gfx;
@@ -38,14 +43,29 @@ impl Game {
         context.surface_config = Some(surface_config);
     }
     fn list_painter(&mut self) {
-        let context = self.context.clone();
+        let context: Arc<Mutex<gfx::GfxContext>> = self.context.clone();
         let mut studio_var = studio::Studio::new(context);
 
         studio_var.add_scene::<studio::cube::CubeScene>();
         studio_var.add_scene::<studio::bunnymark::BunnyMarkScene>();
         studio_var.add_scene::<studio::texture_example::TextureExample>();
-        studio_var.initialize_scene(2);
+        studio_var.initialize_scene(self.scene_index);
         self.studio = Some(studio_var);
+    }
+    fn new(window: Arc<Window>, context: Arc<Mutex<gfx::GfxContext>>) -> Self {
+        Self {
+            window,
+            context: context.clone(),
+            scene_index: 0,
+            studio: None,
+        }
+    }
+    fn mount_next_scene(&mut self) {
+        if let Some(studio) = &mut self.studio {
+            let next_scene_index = (self.scene_index + 1) % studio.ready_functions.len();
+            self.scene_index = next_scene_index;
+            studio.initialize_scene(next_scene_index);
+        }
     }
 }
 

@@ -1,7 +1,6 @@
 use std::{
-    any::Any,
     cell::RefCell,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::{Arc, Mutex},
 };
 
@@ -10,6 +9,7 @@ use std::{
 use crate::{
     gfx::{self},
     painter::{Painter, Sandy},
+    Game,
 };
 pub mod bunnymark;
 pub mod cube;
@@ -18,11 +18,11 @@ pub mod texture_example;
 
 pub struct Studio {
     context: Arc<Mutex<gfx::GfxContext>>,
-    ready_functions: Vec<Box<dyn Fn(&gfx::GfxContext) -> Box<dyn Painter>>>,
+    pub(crate) ready_functions: Vec<Box<dyn Fn(&gfx::GfxContext) -> Box<dyn Painter>>>,
     current_scene: Option<Rc<RefCell<Box<dyn Painter>>>>,
 }
 impl Studio {
-    pub fn new(context: Arc<Mutex<gfx::GfxContext>>) -> Self {
+    pub(crate) fn new(context: Arc<Mutex<gfx::GfxContext>>) -> Self {
         Studio {
             context,
             ready_functions: Vec::new(),
@@ -30,7 +30,7 @@ impl Studio {
         }
     }
 
-    pub fn add_scene<T>(&mut self)
+    pub(crate) fn add_scene<T>(&mut self)
     where
         T: Sandy<Extra = ()> + Painter + 'static,
     {
@@ -41,7 +41,7 @@ impl Studio {
     }
 
     pub fn initialize_scene(&mut self, index: usize) {
-        if let Some(ready_fn) = self.ready_functions.get(index) {
+        if let Some(ready_fn) = self.ready_functions.get(index % self.ready_functions.len()) {
             let context_ref = &self.context.as_ref().lock().unwrap();
             let scene = ready_fn(context_ref);
             self.current_scene = Some(Rc::new(RefCell::new(scene)));
