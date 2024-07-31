@@ -5,9 +5,13 @@ edition = "2021"
 
 [dependencies]
 bytemuck = { version = "1.16.1", features = ["derive"] }
+egui = { git = "https://github.com/ArthurBrussee/egui", branch = "winit-update" }
+egui-wgpu = { git = "https://github.com/ArthurBrussee/egui", branch = "winit-update", package = "egui-wgpu" }
+egui-winit = { git = "https://github.com/ArthurBrussee/egui", branch = "winit-update", package = "egui-winit" }
 glam = "0.28.0"
+lazy_static = "1.5.0"
 nanorand = "0.7.0"
 png = "0.17.13"
 pollster = "0.3.0"
-wgpu = "0.20.1"
-winit = "0.30.3"
+wgpu = "22.0.0"
+winit = "0.30.4"

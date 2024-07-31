@@ -24,7 +24,7 @@ impl Sandy for CubeScene {
     type Extra = ();
     fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         // vertex_buf, index_buf, vertex_size
-        let vertex_source = VertexBuff::ready(context,());
+        let vertex_source = VertexBuff::ready(context, ());
         let vertex_buffers_layout = [wgpu::VertexBufferLayout {
             array_stride: vertex_source.vertex_size as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -43,7 +43,7 @@ impl Sandy for CubeScene {
         }];
 
         // texture, texels, size
-        let texture_source = TextureBuff::ready(context,());
+        let texture_source = TextureBuff::ready(context, ());
 
         // Create other resources
         let config = context.surface_config.as_ref().unwrap();
@@ -143,6 +143,7 @@ impl Sandy for CubeScene {
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState::default(),
                 multiview: None,
+                cache: None,
             });
 
         CubeScene {
@@ -239,7 +240,8 @@ impl Sandy for VertexBuff {
     }
 }
 
-impl Sandy for TextureBuff {
+impl Sandy for TextureBuff
+{
     type Extra = ();
     fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         let size = 256u32;

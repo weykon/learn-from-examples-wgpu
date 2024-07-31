@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    ops::Deref,
     rc::{Rc, Weak},
     sync::{Arc, Mutex},
 };
@@ -30,14 +31,26 @@ impl Studio {
         }
     }
 
-    pub(crate) fn add_scene<T>(&mut self)
+    pub(crate) fn add_scene<T, E>(&mut self, extra: E)
     where
-        T: Sandy<Extra = ()> + Painter + 'static,
+        T: Sandy<Extra = E> + Painter + 'static,
+        E: 'static + Clone,
     {
-        self.ready_functions.push(Box::new(|context| {
-            let scene = T::ready(context, ());
-            Box::new(scene) as Box<dyn Painter>
-        }));
+        // 处理 Copy 类型
+        if std::mem::needs_drop::<E>() {
+            // 非 Copy 类型
+            let cloneable_extra = Rc::new(extra);
+            self.ready_functions.push(Box::new(move |context| {
+                let scene = <T as Sandy>::ready(context, (*cloneable_extra).clone());
+                Box::new(scene) as Box<dyn Painter>
+            }));
+        } else {
+            // Copy 类型
+            self.ready_functions.push(Box::new(move |context| {
+                let scene = <T as Sandy>::ready(context, extra.clone());
+                Box::new(scene) as Box<dyn Painter>
+            }));
+        }
     }
 
     pub fn initialize_scene(&mut self, index: usize) {
@@ -53,5 +66,28 @@ impl Studio {
             let context = self.context.lock().unwrap();
             scene.borrow_mut().paint(&context);
         }
+    }
+}
+
+use core::any::Any;
+pub trait AsAny {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+impl<T: Any> AsAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+struct Wrapper<T>(T);
+
+// 为引用类型实现 From trait
+impl<T: Clone> From<&T> for Wrapper<T> {
+    fn from(t: &T) -> Self {
+        Wrapper(t.clone())
     }
 }

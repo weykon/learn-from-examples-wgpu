@@ -9,7 +9,7 @@ pub struct TextureExample {
     pub pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
 }
-impl Sandy for TextureExample {
+impl Sandy  for TextureExample {
     type Extra = ();
     fn ready(context: &crate::gfx::GfxContext, _extra: Self::Extra) -> Self {
         let texture = {
@@ -82,7 +82,7 @@ impl Sandy for TextureExample {
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: 3*4,
+                    offset: 12 , // 3*4,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x2,
                 },
@@ -171,6 +171,7 @@ impl Sandy for TextureExample {
                         })],
                     }),
                     multiview: None,
+                    cache: None,
                 }
             );
         Self {

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, rc::Rc};
+use std::{borrow::Cow, ops::Deref, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
 use nanorand::{Rng, WyRand};
@@ -18,7 +18,6 @@ impl Sandy for BunnyMarkScene {
         // global的一些变量和buffer资源
         // texture的buffer写入和布局
         // 生成一下顶点情况
-
         let config = context.surface_config.as_ref().unwrap();
         let GlobalThing {
             global_bind_group_layout,
@@ -30,7 +29,7 @@ impl Sandy for BunnyMarkScene {
             local_bind_group_layout,
             local_buffer,
             local_group,
-        } = LocalThing::ready(context, (uniform_alignment));
+        } = LocalThing::ready(context, uniform_alignment);
         let pipeline_layout =
             context
                 .device
@@ -76,6 +75,7 @@ impl Sandy for BunnyMarkScene {
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState::default(),
                 multiview: None,
+                cache: None,
             });
 
         let rng = WyRand::new_seed(42);
