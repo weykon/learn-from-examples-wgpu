@@ -1,33 +1,43 @@
 use std::{borrow::Cow, task::ready};
 
-use bytemuck::Zeroable;
+use bytemuck::{Pod, Zeroable};
 use wgpu::{
     util::DeviceExt, StoreOp, TextureFormat,
 };
 
 // some vertex and indexes and instance data
 use crate::painter::{Painter, Sandy};
-#[repr(C, align(256))]
-#[derive(Clone, Copy, Zeroable)]
+#[repr(C)]
+#[derive(Clone, Copy, Zeroable, Pod)]
 struct Instance {
     position: [f32; 3],
-    color: [f32; 3],
-    speed: f32,
-    direction: [f32; 2],
+}
+fn gen_instance_data() -> Vec<Instance> {
+    let mut instances: Vec<Instance> = Vec::new();
+    for i in 0..5 {
+        instances.push(Instance {
+            position: [
+                -0.5 + (i as f32) * 0.1,
+                -0.5 + (i as f32) * 0.1,
+                0.0,
+            ],
+        });
+    }
+    instances
 }
 fn gen_static_data() -> (Vec<f32>, Vec<u16>) {
     #[rustfmt::skip]
     #[allow(non_snake_case)]
     let VERTEX_DATA = [
-        -0.5, -0.5, 0.0,   0.2,0.1,0.4,   0.3,  0.1,0.1,
-        -0.5, 0.5, 0.0,   0.3,0.1,0.4,   0.1,  0.1,0.1,
-        0.5, 0.5, 0.0,   0.2,0.1,0.2,   0.2,  0.1,0.1,
-        0.5, -0.5, 0.0,   0.4,0.5,0.1,   0.4,  0.1,0.1,
+        -0.1, -0.1, 0.0,   0.2,0.1,0.4, 
+        -0.1, 0.1, 0.0,   0.3,0.1,0.4,  
+        0.1, 0.1, 0.0,   0.2,0.1,0.2,   
+        0.1, -0.1, 0.0,   0.4,0.5,0.1,  
     ];
     #[rustfmt::skip]
     #[allow(non_snake_case)]
     let INDEX_DATA: [u16;6] = [
-        0, 1, 2,   0, 3, 2
+       2,1,0,   0,3,2
     ];
     (VERTEX_DATA.to_vec(), INDEX_DATA.to_vec())
 }
@@ -40,6 +50,18 @@ impl Sandy for InstanceScene {
         #[allow(non_snake_case)]
         let (VERTEX_DATA, INDEX_DATA) =
             gen_static_data();
+        let instance_data = gen_instance_data();
+        let instances_buffer = context
+            .device
+            .create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(
+                    &instance_data,
+                ),
+                usage: wgpu::BufferUsages::VERTEX,
+            },
+        );
         let vertex_buffer = context
             .device
             .create_buffer_init(
@@ -79,6 +101,7 @@ impl Sandy for InstanceScene {
                 vertex_buffer,
                 index_buffer,
             },
+            instances_buffer,
         }
     }
 }
@@ -122,32 +145,35 @@ impl Sandy for InstancePipeline {
                 entry_point: "vs_main",
                 // 这里处理顶点缓冲区的布局，而非顶点源数据
                 // 而是在render_pass中再写入顶点数据
-                buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: 9 * 4,
-                    step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x3,
-                            offset: 0,
-                            shader_location: 0,
-                        },
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x3,
-                            offset: 3 * 4,
-                            shader_location: 1,
-                        },
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32,
-                            offset: 6 * 4,
-                            shader_location: 2,
-                        },
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x2,
-                            offset:  7 * 4,
-                            shader_location: 3,
-                        },
-                    ],
-                }],
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: 6 * 4,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &[
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x3,
+                                offset: 0,
+                                shader_location: 0,
+                            },
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x3,
+                                offset: 3 * 4,
+                                shader_location: 1,
+                            },
+                        ],
+                    },
+                    wgpu::VertexBufferLayout { 
+                        array_stride : 3 * 4 ,
+                        step_mode: wgpu::VertexStepMode::Instance,
+                        attributes: &[
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x3,
+                                offset: 0,
+                                shader_location: 2,
+                            },
+                        ], 
+                    }
+                ],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -182,6 +208,7 @@ impl Sandy for InstancePipeline {
 
 pub struct InstanceScene {
     pipeline: InstancePipeline,
+    instances_buffer: wgpu::Buffer,
 }
 impl Painter for InstanceScene {
     fn paint(
@@ -238,7 +265,11 @@ impl Painter for InstanceScene {
                     .slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-            rpass.draw_indexed(0..6, 0, 0..1);
+            rpass.set_vertex_buffer(
+                1,
+                self.instances_buffer.slice(..),
+            );
+            rpass.draw_indexed(0..6, 0, 0..5);
         }
 
         context

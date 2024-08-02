@@ -1,8 +1,12 @@
+struct Uniforms { 
+    @location(0) dt:f32,
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
 struct VertexInput {
     @location(0) position: vec3f,
     @location(1) color: vec3f,
-    @location(2) speed: f32,
-    @location(3) direction: vec2f,
 };
 
 struct VertexOutput {
@@ -10,13 +14,18 @@ struct VertexOutput {
     @location(0) color: vec3f,
 };
 
+struct InstanceInput {
+    @location(2) position: vec3f,
+};
+
 @vertex
 fn vs_main(
     model: VertexInput,
+    instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = model.color;
-    out.clip_position = vec4f(model.position, 1.0);
+    out.clip_position = vec4f(model.position + instance.position, 1.0);
     return out;
 }
 
