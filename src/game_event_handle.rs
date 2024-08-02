@@ -43,24 +43,24 @@ impl ApplicationHandler for GameEntry {
     }
 
     fn about_to_wait(&mut self, event_loop: &event_loop::ActiveEventLoop) {
-        if let GameEntry::Ready(game) = self {
-            let now = std::time::Instant::now();
-            let delta_time = now - game.last_update;
+        // if let GameEntry::Ready(game) = self {
+        //     let now = std::time::Instant::now();
+        //     let delta_time = now - game.last_update;
 
-            if delta_time >= *FRAME_DURATION {
-                // 更新游戏逻辑
-                game.update_game(delta_time.as_secs_f32());
+        //     if delta_time >= *FRAME_DURATION {
+        //         // 更新游戏逻辑
+        //         game.update_game(delta_time.as_secs_f32());
 
-                // 渲染
-                game.window.request_redraw();
+        //         // 渲染
+        //         game.window.request_redraw();
 
-                game.last_update = now;
-            }
+        //         game.last_update = now;
+        //     }
 
-            // 计算下一帧的时间
-            let next_frame_time = game.last_update + *FRAME_DURATION;
-            event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
-        }
+        //     // 计算下一帧的时间
+        //     let next_frame_time = game.last_update + *FRAME_DURATION;
+        //     event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
+        // }
     }
 
     fn window_event(

@@ -16,6 +16,7 @@ pub mod bunnymark;
 pub mod cube;
 pub mod instances;
 pub mod texture_example;
+pub mod uniform_matrix_and_transform_in_shader;
 
 pub struct Studio {
     context: Arc<Mutex<gfx::GfxContext>>,

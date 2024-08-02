@@ -393,7 +393,6 @@ impl Sandy for LocalThing {
                     }],
                 });
 
-        // 模型矩阵的buffer声明创建
         // 这里使用的是create_buffer
         // 比init少这个初始化的步骤，所以后续需要数据的传入去上传
         let local_buffer = context.device.create_buffer(&wgpu::BufferDescriptor {
@@ -403,7 +402,7 @@ impl Sandy for LocalThing {
             mapped_at_creation: false,
         });
 
-        // 模型矩阵
+        // 是对齐世界矩阵的group
         let local_group = context
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
