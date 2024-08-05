@@ -9,7 +9,7 @@ pub struct TextureExample {
     pub pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
 }
-impl Sandy  for TextureExample {
+impl Sandy for TextureExample {
     type Extra = ();
     fn ready(context: &crate::gfx::GfxContext, _extra: Self::Extra) -> Self {
         let texture = {
@@ -67,13 +67,17 @@ impl Sandy  for TextureExample {
             0.5, 0.5, 0.0      ,1.0, 0.0, 
             -0.5, -0.5, 0.0    ,0.0, 1.0, 
             -0.5, 0.5, 0.0     ,0.0, 0.0, 
-        ];  // f32 32位浮点数 4字节, 5个元素, 20字节
+        ]; // f32 32位浮点数 4字节, 5个元素, 20字节
 
-        let vertex_buffer = context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor { label: Some("my no index vertexs buffer"), contents:  bytemuck::cast_slice(&just_4_vertices), usage: wgpu::BufferUsages::VERTEX, }
-        );
+        let vertex_buffer = context
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("my no index vertexs buffer"),
+                contents: bytemuck::cast_slice(&just_4_vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
         let vertex_buffers_layout = [wgpu::VertexBufferLayout {
-            array_stride:   20,
+            array_stride: 20,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -82,7 +86,7 @@ impl Sandy  for TextureExample {
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: 12 , // 3*4,
+                    offset: 12, // 3*4,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x2,
                 },
@@ -131,69 +135,76 @@ impl Sandy  for TextureExample {
                 ],
                 label: Some("icon bind group"),
             });
-            let shader = context.device.create_shader_module(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("icon shader"),
-                    source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader/texture_example.wgsl"))),
-                }
-            );
-            let pipeline_layout = context.device.create_pipeline_layout(
-            &wgpu::PipelineLayoutDescriptor {
-                label: Some("icon pipeline layout"),
-                bind_group_layouts: &[&bind_group_layout],
-                push_constant_ranges: &[],
+        let shader = context
+            .device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("icon shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
+                    "shader/texture_example.wgsl"
+                ))),
             });
-            let pipeline =  context.device.create_render_pipeline(
-                &wgpu::RenderPipelineDescriptor {
-                    label: Some("icon pipeline"),
-                    layout: Some(&pipeline_layout),
-                    vertex: wgpu::VertexState{
-                        module: &shader,
-                        entry_point: "vs_main",
-                        compilation_options: Default::default(),
-                        buffers: &vertex_buffers_layout,
-                    },
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleStrip,
-                        strip_index_format: None,
+        let pipeline_layout =
+            context
+                .device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("icon pipeline layout"),
+                    bind_group_layouts: &[&bind_group_layout],
+                    push_constant_ranges: &[],
+                });
+        let pipeline = context
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("icon pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader,
+                    entry_point: "vs_main",
+                    compilation_options: Default::default(),
+                    buffers: &vertex_buffers_layout,
+                },
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleStrip,
+                    strip_index_format: None,
                     ..Default::default()
-                    },
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                    fragment: Some(wgpu::FragmentState {
-                        module: &shader,
-                        entry_point: "fs_main",
-                        compilation_options: Default::default(),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                            blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                            write_mask: wgpu::ColorWrites::default(),
-                        })],
-                    }),
-                    multiview: None,
-                    cache: None,
-                }
-            );
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader,
+                    entry_point: "fs_main",
+                    compilation_options: Default::default(),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                        write_mask: wgpu::ColorWrites::default(),
+                    })],
+                }),
+                multiview: None,
+                cache: None,
+            });
         Self {
             bind_group,
             pipeline,
             // pass set的
-            vertex_buffer
+            vertex_buffer,
         }
-
     }
 }
 impl Painter for TextureExample {
-    fn paint(&mut self, context: &crate::gfx::GfxContext) {
-         let frame = context.surface.get_current_texture().unwrap();
-         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-         let mut encoder = context.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: Some("icon encoder") },
-         );
+    fn paint(&mut self, context: &crate::gfx::GfxContext,dt:f32, time: f32) {
+        let frame = context.surface.get_current_texture().unwrap();
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = context
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("icon encoder"),
+            });
 
-         { 
+        {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None , 
+                label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -215,10 +226,9 @@ impl Painter for TextureExample {
             rpass.set_bind_group(0, &self.bind_group, &[]);
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.draw(0..6, 0..1);
-         };
+        };
 
         context.queue.submit(std::iter::once(encoder.finish()));
         frame.present();
-
     }
 }

@@ -10,16 +10,13 @@ use std::{
     iter,
     ops::Deref,
     rc::Rc,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, Weak},
 };
 use winit::window::Window;
 
 use super::EguiRenderer;
 
-pub fn first(
-    ui: &Context,
-    fps: Rc<RefCell<f32>>,
-) {
+pub fn first(ui: &Context, fps: Rc<RefCell<f32>>) {
     println!("FPS: {}", fps.as_ref().borrow());
     egui::Window::new("Streamline CFD")
         // .vscroll(true)
@@ -48,15 +45,8 @@ pub struct GUISceneExample {
     pub fps: Rc<RefCell<f32>>,
 }
 impl Sandy for GUISceneExample {
-    type Extra = (
-        Arc<Window>,
-        Arc<Mutex<EguiRenderer>>,
-        Rc<RefCell<f32>>,
-    );
-    fn ready(
-        context: &gfx::GfxContext,
-        (window, egui, fps): Self::Extra,
-    ) -> Self
+    type Extra = (Arc<Window>, Arc<Mutex<EguiRenderer>>, Rc<RefCell<f32>>);
+    fn ready(context: &gfx::GfxContext, (window, egui, fps): Self::Extra) -> Self
     where
         Self: Sized,
     {
@@ -65,25 +55,16 @@ impl Sandy for GUISceneExample {
 }
 
 impl ScenePainter for GUISceneExample {
-    fn paint(
-        &mut self,
-        context: &gfx::GfxContext,
-    ) {
+    fn paint(&mut self, context: &gfx::GfxContext,dt:f32, time: f32) {
         let mut encoder = context
             .device
-            .create_command_encoder(
-                &wgpu::CommandEncoderDescriptor {
-                    label: Some("egui encoder"),
-                },
-            );
-        let frame = context
-            .surface
-            .get_current_texture()
-            .unwrap();
-        let view = frame.texture.create_view(
-            &wgpu::TextureViewDescriptor::default(
-            ),
-        );
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("egui encoder"),
+            });
+        let frame = context.surface.get_current_texture().unwrap();
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("egui render pass"),
@@ -105,21 +86,11 @@ impl ScenePainter for GUISceneExample {
                 occlusion_query_set: None,
             });
         }
-        let config = context
-            .surface_config
-            .as_ref()
-            .unwrap();
-        let screen_descriptor =
-            egui_wgpu::ScreenDescriptor {
-                size_in_pixels: [
-                    config.width,
-                    config.height,
-                ],
-                pixels_per_point: self
-                    .window
-                    .scale_factor()
-                    as f32,
-            };
+        let config = context.surface_config.as_ref().unwrap();
+        let screen_descriptor = egui_wgpu::ScreenDescriptor {
+            size_in_pixels: [config.width, config.height],
+            pixels_per_point: self.window.scale_factor() as f32,
+        };
 
         self.egui.clone().lock().unwrap().draw(
             &context.device,
@@ -131,9 +102,7 @@ impl ScenePainter for GUISceneExample {
             |ui| first(ui, self.fps.clone()),
         );
 
-        context
-            .queue
-            .submit(iter::once(encoder.finish()));
+        context.queue.submit(iter::once(encoder.finish()));
         frame.present();
     }
 }

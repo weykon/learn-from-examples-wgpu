@@ -2,7 +2,6 @@ use crate::gfx;
 use crate::Game;
 use crate::GameEntry;
 use lazy_static::lazy_static;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::Mutex;
 use winit::application::ApplicationHandler;
@@ -17,6 +16,14 @@ lazy_static! {
     pub static ref FRAME_DURATION: std::time::Duration =
         std::time::Duration::from_secs_f32(1.0 / 60.0);
 }
+lazy_static! {
+    pub static ref WINDOW_SIZE: winit::dpi::PhysicalSize<u32> =
+        winit::dpi::PhysicalSize::new(256, 256);
+}
+lazy_static! {
+    pub static ref OUTTER_SIZE: winit::dpi::PhysicalPosition<u32> =
+        winit::dpi::PhysicalPosition::new(3200, 1900);
+}
 impl ApplicationHandler for GameEntry {
     fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
         println!("Resumed");
@@ -27,9 +34,13 @@ impl ApplicationHandler for GameEntry {
             GameEntry::Loading => {
                 let window = Arc::new(
                     event_loop
-                        .create_window(WindowAttributes::default())
+                        .create_window(
+                            WindowAttributes::default()
+                                .with_inner_size(*WINDOW_SIZE)
+                        )
                         .unwrap(),
                 );
+                window.set_outer_position(*OUTTER_SIZE);
                 pollster::block_on(async move {
                     println!("in async : Loading");
                     let context = gfx::GfxContext::new(window.clone()).await;
@@ -43,24 +54,24 @@ impl ApplicationHandler for GameEntry {
     }
 
     fn about_to_wait(&mut self, event_loop: &event_loop::ActiveEventLoop) {
-        // if let GameEntry::Ready(game) = self {
-        //     let now = std::time::Instant::now();
-        //     let delta_time = now - game.last_update;
+        if let GameEntry::Ready(game) = self {
+            let now = std::time::Instant::now();
+            let delta_time = now - game.last_update;
+            let time = *game.time.lock().unwrap() + delta_time.as_secs_f32();
+            if delta_time >= *FRAME_DURATION {
+                // 更新游戏逻辑
+                game.update_game(delta_time.as_secs_f32(), time);
 
-        //     if delta_time >= *FRAME_DURATION {
-        //         // 更新游戏逻辑
-        //         game.update_game(delta_time.as_secs_f32());
+                // 渲染
+                game.window.request_redraw();
 
-        //         // 渲染
-        //         game.window.request_redraw();
+                game.last_update = now;
+            }
 
-        //         game.last_update = now;
-        //     }
-
-        //     // 计算下一帧的时间
-        //     let next_frame_time = game.last_update + *FRAME_DURATION;
-        //     event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
-        // }
+            // 计算下一帧的时间
+            let next_frame_time = game.last_update + *FRAME_DURATION;
+            event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
+        }
     }
 
     fn window_event(
@@ -116,7 +127,10 @@ impl ApplicationHandler for GameEntry {
                 },
                 winit::event::WindowEvent::RedrawRequested => {
                     println!("RedrawRequested");
-                    game.studio.as_ref().unwrap().render_current_scene();
+                    game.studio.as_ref().unwrap().render_current_scene(
+                        *game.delta_time.clone().lock().unwrap(),
+                        *game.time.clone().lock().unwrap(),
+                    );
                 }
                 _ => {}
             }

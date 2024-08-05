@@ -1,5 +1,5 @@
-use std::f32::consts;
 use crate::{utils::vertex, utils::Vertex};
+use std::f32::consts;
 
 pub fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
     let vertex_data = [

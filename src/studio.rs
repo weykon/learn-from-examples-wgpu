@@ -1,8 +1,8 @@
 use std::{
     cell::RefCell,
     ops::Deref,
-    rc::{Rc, Weak},
-    sync::{Arc, Mutex},
+    rc::Rc,
+    sync::{Arc, Mutex, Weak},
 };
 
 // 画室
@@ -62,10 +62,10 @@ impl Studio {
         }
     }
 
-    pub fn render_current_scene(&self) {
+    pub fn render_current_scene(&self, dt: f32, time: f32) {
         if let Some(scene) = &self.current_scene {
             let context = self.context.lock().unwrap();
-            scene.borrow_mut().paint(&context);
+            scene.borrow_mut().paint(&context, dt, time);
         }
     }
 }

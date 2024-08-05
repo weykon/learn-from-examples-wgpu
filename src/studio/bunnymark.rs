@@ -121,7 +121,7 @@ pub struct BunnyMarkScene {
     rng: WyRand,
 }
 impl Painter for BunnyMarkScene {
-    fn paint(&mut self, context: &crate::gfx::GfxContext) {
+    fn paint(&mut self, context: &crate::gfx::GfxContext,dt:f32, time: f32) {
         let delta = 0.01;
         for bunny in self.bunnies.iter_mut() {
             bunny.update_data(delta, &self.extent);

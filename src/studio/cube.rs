@@ -158,7 +158,7 @@ impl Sandy for CubeScene {
 }
 
 impl Painter for CubeScene {
-    fn paint(&mut self, context: &gfx::GfxContext) {
+    fn paint(&mut self, context: &gfx::GfxContext,dt:f32, time: f32) {
         let frame = context.surface.get_current_texture().unwrap();
         let view = frame
             .texture
@@ -240,8 +240,7 @@ impl Sandy for VertexBuff {
     }
 }
 
-impl Sandy for TextureBuff
-{
+impl Sandy for TextureBuff {
     type Extra = ();
     fn ready(context: &gfx::GfxContext, _: Self::Extra) -> Self {
         let size = 256u32;

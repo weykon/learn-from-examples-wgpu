@@ -1,6 +1,4 @@
-use crate::{
-    game_event_handle::FRAME_DURATION, Game,
-};
+use crate::{game_event_handle::FRAME_DURATION, Game};
 use std::{cell::RefCell, rc::Rc, time};
 
 struct StandardTimeWorld {
@@ -25,8 +23,7 @@ pub struct FrameCounter {
 impl FrameCounter {
     pub fn new() -> Self {
         Self {
-            last_printed_instant:
-                time::Instant::now(),
+            last_printed_instant: time::Instant::now(),
             frame_count: 0,
             fps: Rc::new(RefCell::new(0.)),
             frame_time: 0.,
@@ -37,21 +34,15 @@ impl FrameCounter {
         println!("FrameCounter::update");
         self.frame_count += 1;
         let new_instant = game.last_update;
-        let elapsed_secs = (new_instant
-            - self.last_printed_instant)
-            .as_secs_f32();
+        let elapsed_secs = (new_instant - self.last_printed_instant).as_secs_f32();
         if elapsed_secs > 1.0 {
-            let elapsed_ms =
-                elapsed_secs * 1000.0;
-            let frame_time = elapsed_ms
-                / self.frame_count as f32;
-            let fps = self.frame_count as f32
-                / elapsed_secs;
+            let elapsed_ms = elapsed_secs * 1000.0;
+            let frame_time = elapsed_ms / self.frame_count as f32;
+            let fps = self.frame_count as f32 / elapsed_secs;
             *self.fps.borrow_mut() = fps;
             self.frame_time = frame_time;
 
-            self.last_printed_instant =
-                new_instant;
+            self.last_printed_instant = new_instant;
             self.frame_count = 0;
         }
     }
