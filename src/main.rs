@@ -58,6 +58,9 @@ impl Game {
     fn list_painter(&mut self) {
         let context: Arc<Mutex<gfx::GfxContext>> = self.context.clone();
         let mut studio_var = studio::Studio::new(context);
+        studio_var.add_scene::<studio::circle_instances::CircleInstancesScene, _>(());
+        studio_var
+            .add_scene::<studio::uniform_matrix_and_transform_in_shader::UniformMatrixAtGpu, _>(());
         studio_var.add_scene::<studio::instances::InstanceScene, _>(());
         studio_var
             .add_scene::<egui::first::GUISceneExample, (Arc<Window>, Arc<Mutex<EguiRenderer>>,Rc<RefCell<f32>>)>((

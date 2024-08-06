@@ -29,10 +29,10 @@ fn gen_static_data() -> (Vec<f32>, Vec<u16>) {
     #[rustfmt::skip]
     #[allow(non_snake_case)]
     let VERTEX_DATA = [
-        -0.1, -0.1, 0.0,   0.2,0.1,0.4, 
-        -0.1, 0.1, 0.0,   0.3,0.1,0.4,  
-        0.1, 0.1, 0.0,   0.2,0.1,0.2,   
-        0.1, -0.1, 0.0,   0.4,0.5,0.1,  
+        -0.1, -0.1, 0.0,    0.2,0.1,0.4, 
+        -0.1, 0.1, 0.0,     0.3,0.1,0.4,  
+        0.1, 0.1, 0.0,      0.2,0.1,0.2,   
+        0.1, -0.1, 0.0,     0.4,0.5,0.1,  
     ];
     #[rustfmt::skip]
     #[allow(non_snake_case)]
@@ -117,7 +117,7 @@ impl Sandy for InstanceScene {
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Instance Buffer"),
                     contents: bytemuck::cast_slice(&instance_data),
-                    usage: wgpu::BufferUsages::VERTEX ,
+                    usage: wgpu::BufferUsages::VERTEX,
                 });
         let vertex_buffer = context
             .device
