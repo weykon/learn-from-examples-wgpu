@@ -1,3 +1,5 @@
+pub mod models;
+
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]

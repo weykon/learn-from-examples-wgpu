@@ -19,6 +19,7 @@ pub mod texture_example;
 pub mod uniform_matrix_and_transform_in_shader;
 pub mod circle_instances;
 pub mod depth_buffer_example;
+pub mod shader_playgroud_scene;
 
 pub struct Studio {
     context: Arc<Mutex<gfx::GfxContext>>,
