@@ -1,3 +1,6 @@
+use bytemuck::Pod;
+use wgpu::util::DeviceExt;
+
 use super::{vertex, Vertex};
 
 pub fn gen_plane() -> ([f32; 36], [u16; 6]) {
@@ -61,7 +64,7 @@ fn gen_cube() -> (Vec<Vertex>, Vec<u16>) {
     (vertex_data.to_vec(), index_data.to_vec())
 }
 
-fn gen_sphere(radius: f32, sectors: u32, stacks: u32) -> (Vec<f32>, Vec<u16>) {
+pub fn gen_sphere(radius: f32, sectors: u32, stacks: u32) -> (Vec<f32>, Vec<u16>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -112,4 +115,127 @@ fn gen_sphere(radius: f32, sectors: u32, stacks: u32) -> (Vec<f32>, Vec<u16>) {
     }
 
     (vertices, indices)
+}
+
+pub trait Model {
+    type V: Sized + 'static + AsRef<[f32]>;
+    type I: Sized + 'static + AsRef<[Self::IndexType]>;
+    type IndexType: Sized + Copy + 'static + Pod;
+
+    fn gen() -> (Self::V, Self::I);
+    fn to_buffer<'a>(
+        v: Self::V,
+        i: Self::I,
+        context: &crate::gfx::GfxContext,
+    ) -> (wgpu::Buffer, wgpu::Buffer) {
+        let vertexes_buffer =
+            context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: None,
+                    contents: bytemuck::cast_slice(v.as_ref()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+        let indexes_buffer = context
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(i.as_ref()),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+        (vertexes_buffer, indexes_buffer)
+    }
+}
+
+pub struct Plane {
+    vertexes: Vec<f32>,
+    indexes: Vec<u16>,
+}
+
+impl Model for Plane {
+    fn gen() -> (Vec<f32>, Vec<u16>) {
+        let (vertices, indices) = gen_plane();
+        (vertices.to_vec(), indices.to_vec())
+    }
+    type V = Vec<f32>;
+    type I = Vec<u16>;
+    type IndexType = u16;
+}
+pub struct Sphere {
+    vertexes: Vec<f32>,
+    indexes: Vec<u16>,
+}
+impl Model for Sphere {
+    fn gen() -> (Vec<f32>, Vec<u16>) {
+        let (vertices, indices) = gen_sphere(1.0, 100, 100);
+        (vertices.to_vec(), indices.to_vec())
+    }
+    type V = Vec<f32>;
+    type I = Vec<u16>;
+    type IndexType = u16;
+}
+
+pub struct Cube {
+    vertexes: Vec<f32>,
+    indexes: Vec<u16>,
+}
+
+impl Model for Cube {
+    fn gen() -> (Vec<f32>, Vec<u16>) {
+        let (vertices, indices) = gen_cube();
+        (
+            vertices
+                .iter()
+                .flat_map(|v| v.to_f32_array().into_iter())
+                .collect::<Vec<f32>>(),
+            indices.to_vec(),
+        )
+    }
+    type V = Vec<f32>;
+    type I = Vec<u16>;
+    type IndexType = u16;
+}
+
+#[derive(Copy, Clone)]
+pub enum ModelType {
+    Plane,
+    Sphere,
+    Cube,
+}
+
+pub struct ModelBuffers {
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+}
+
+impl ModelType {
+    pub fn iterator() -> impl Iterator<Item = ModelType> {
+        [Self::Plane, Self::Sphere, Self::Cube, Self::Plane]
+            .iter()
+            .copied()
+    }
+    pub fn create_all_buffers(context: &crate::gfx::GfxContext) -> Vec<ModelBuffers> {
+        Self::iterator()
+            .map(|model_type| {
+                let (vertex_buffer, index_buffer) = match model_type {
+                    ModelType::Plane => {
+                        let (vertices, indices) = Plane::gen();
+                        Plane::to_buffer(vertices, indices, context)
+                    }
+                    ModelType::Sphere => {
+                        let (vertices, indices) = Sphere::gen();
+                        Sphere::to_buffer(vertices, indices, context)
+                    }
+                    ModelType::Cube => {
+                        let (vertices, indices) = Cube::gen();
+                        Cube::to_buffer(vertices, indices, context)
+                    }
+                };
+                ModelBuffers {
+                    vertex_buffer,
+                    index_buffer,
+                }
+            })
+            .collect()
+    }
 }

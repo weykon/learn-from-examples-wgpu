@@ -15,3 +15,16 @@ pub(crate) fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
         _tex_coord: [tc[0] as f32, tc[1] as f32],
     }
 }
+
+impl Vertex {
+    pub fn to_f32_array(&self) -> [f32; 6] {
+        [
+            self._pos[0],
+            self._pos[1],
+            self._pos[2],
+            self._tex_coord[0],
+            self._tex_coord[1],
+            self._pos[3], // 将w分量放在最后
+        ]
+    }
+}

@@ -12,12 +12,11 @@ use wgpu::{util::DeviceExt, MultisampleState, PipelineCompilationOptions, Pipeli
 /// here I wanna basicly scene of shader playground and contain some basic element
 use crate::{
     painter::{Painter, Sandy},
-    utils::models::gen_plane,
+    utils::models::{gen_plane, gen_sphere, ModelBuffers, ModelType},
 };
 pub struct ShaderPlaygroundScene {
     pipeline: wgpu::RenderPipeline,
-    vertexes_buffer: wgpu::Buffer,
-    indexes_buffer: wgpu::Buffer,
+    model_buffers: Vec<ModelBuffers>,
     env_matrix_uniform_buffer: wgpu::Buffer,
     time_uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
@@ -72,22 +71,24 @@ impl Sandy for ShaderPlaygroundScene {
     where
         Self: Sized,
     {
-        let (vertexes, indexes) = gen_plane();
-        let vertexes_buffer =
-            context
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(&vertexes),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
-        let indexes_buffer = context
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&indexes),
-                usage: wgpu::BufferUsages::INDEX,
-            });
+        // let (vertexes, indexes) = gen_plane();
+        // let vertexes_buffer =
+        //     context
+        //         .device
+        //         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //             label: None,
+        //             contents: bytemuck::cast_slice(&vertexes),
+        //             usage: wgpu::BufferUsages::VERTEX,
+        //         });
+        // let indexes_buffer = context
+        //     .device
+        //     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //         label: None,
+        //         contents: bytemuck::cast_slice(&indexes),
+        //         usage: wgpu::BufferUsages::INDEX,
+        //     });
+
+        let buffers = ModelType::create_all_buffers(context);
 
         let UniformThing {
             env_matrix_uniform_buffer,
@@ -139,14 +140,13 @@ impl Sandy for ShaderPlaygroundScene {
             });
         Self {
             pipeline,
-            vertexes_buffer,
-            indexes_buffer,
             env_matrix_uniform_buffer,
             time_uniform_buffer,
             uniform_bind_group: bind_group,
             uniform_pipeline_layout: pipeline_layout,
             uniform_bind_group_layout: bind_group_layout,
             env_matrix,
+            model_buffers: buffers,
         }
     }
 }
@@ -229,9 +229,22 @@ impl Painter for ShaderPlaygroundScene {
                     0.0,
                     1.0,
                 );
-                render_pass.set_vertex_buffer(0, self.vertexes_buffer.slice(..));
-                render_pass
-                    .set_index_buffer(self.indexes_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.set_vertex_buffer(
+                    0,
+                    self.model_buffers
+                        .get(i as usize)
+                        .unwrap()
+                        .vertex_buffer
+                        .slice(..),
+                );
+                render_pass.set_index_buffer(
+                    self.model_buffers
+                        .get(i as usize)
+                        .unwrap()
+                        .index_buffer
+                        .slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
                 render_pass.draw_indexed(0..6, 0, 0..1);
             }
         }
