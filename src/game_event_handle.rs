@@ -60,7 +60,7 @@ impl ApplicationHandler for GameEntry {
             let time = *game.time.lock().unwrap() + delta_time.as_secs_f32();
             if delta_time >= *FRAME_DURATION {
                 // 更新游戏逻辑
-                game.update_game(delta_time.as_secs_f32(), time);
+                game.update_game(delta_time.as_secs_f32(), time); 
 
                 // 渲染
                 game.window.request_redraw();
