@@ -23,6 +23,8 @@ pub struct ShaderPlaygroundScene {
     uniform_pipeline_layout: wgpu::PipelineLayout,
     uniform_bind_group_layout: wgpu::BindGroupLayout,
     env_matrix: [EnvUniforms; 4],
+    depth_texture: wgpu::Texture,
+    depth_view: wgpu::TextureView,
 }
 
 #[repr(C)]
@@ -71,23 +73,6 @@ impl Sandy for ShaderPlaygroundScene {
     where
         Self: Sized,
     {
-        // let (vertexes, indexes) = gen_plane();
-        // let vertexes_buffer =
-        //     context
-        //         .device
-        //         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //             label: None,
-        //             contents: bytemuck::cast_slice(&vertexes),
-        //             usage: wgpu::BufferUsages::VERTEX,
-        //         });
-        // let indexes_buffer = context
-        //     .device
-        //     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //         label: None,
-        //         contents: bytemuck::cast_slice(&indexes),
-        //         usage: wgpu::BufferUsages::INDEX,
-        //     });
-
         let buffers = ModelType::create_all_buffers(context);
 
         let UniformThing {
@@ -107,6 +92,24 @@ impl Sandy for ShaderPlaygroundScene {
                     "shader_playgroud_scene/base.wgsl"
                 ))),
             });
+
+        // depth on frame and depth texture
+        let depth_texture = context.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d {
+                width: context.surface_config.as_ref().unwrap().width,
+                height: context.surface_config.as_ref().unwrap().height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[wgpu::TextureFormat::Depth32Float],
+        });
+        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let pipeline = context
             .device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -123,7 +126,13 @@ impl Sandy for ShaderPlaygroundScene {
                     compilation_options: PipelineCompilationOptions::default(),
                 },
                 primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: wgpu::TextureFormat::Depth32Float,
+                    depth_write_enabled: true,
+                    depth_compare: wgpu::CompareFunction::Less,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
                 multisample: MultisampleState::default(),
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
@@ -147,6 +156,8 @@ impl Sandy for ShaderPlaygroundScene {
             uniform_bind_group_layout: bind_group_layout,
             env_matrix,
             model_buffers: buffers,
+            depth_texture,
+            depth_view,
         }
     }
 }
@@ -199,7 +210,14 @@ impl Painter for ShaderPlaygroundScene {
                     },
                 })],
                 label: None,
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 ..Default::default()
             });
             render_pass.set_pipeline(&self.pipeline);
@@ -245,7 +263,11 @@ impl Painter for ShaderPlaygroundScene {
                         .slice(..),
                     wgpu::IndexFormat::Uint16,
                 );
-                render_pass.draw_indexed(0..6, 0, 0..1);
+                render_pass.draw_indexed(
+                    0..self.model_buffers.get(i as usize).unwrap().index_count,
+                    0,
+                    0..1,
+                );
             }
         }
 

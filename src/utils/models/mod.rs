@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use bytemuck::Pod;
 use wgpu::util::DeviceExt;
 
@@ -167,7 +169,7 @@ pub struct Sphere {
 }
 impl Model for Sphere {
     fn gen() -> (Vec<f32>, Vec<u16>) {
-        let (vertices, indices) = gen_sphere(1.0, 100, 100);
+        let (vertices, indices) = gen_sphere(0.5, 64, 32);
         (vertices.to_vec(), indices.to_vec())
     }
     type V = Vec<f32>;
@@ -206,6 +208,7 @@ pub enum ModelType {
 pub struct ModelBuffers {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+    pub index_count: u32,
 }
 
 impl ModelType {
@@ -217,23 +220,20 @@ impl ModelType {
     pub fn create_all_buffers(context: &crate::gfx::GfxContext) -> Vec<ModelBuffers> {
         Self::iterator()
             .map(|model_type| {
+                let (vertices, indices) = match model_type {
+                    ModelType::Plane => Plane::gen(),
+                    ModelType::Sphere => Sphere::gen(),
+                    ModelType::Cube => Cube::gen(),
+                };
                 let (vertex_buffer, index_buffer) = match model_type {
-                    ModelType::Plane => {
-                        let (vertices, indices) = Plane::gen();
-                        Plane::to_buffer(vertices, indices, context)
-                    }
-                    ModelType::Sphere => {
-                        let (vertices, indices) = Sphere::gen();
-                        Sphere::to_buffer(vertices, indices, context)
-                    }
-                    ModelType::Cube => {
-                        let (vertices, indices) = Cube::gen();
-                        Cube::to_buffer(vertices, indices, context)
-                    }
+                    ModelType::Plane => Plane::to_buffer(vertices, indices.clone(), context),
+                    ModelType::Sphere => Sphere::to_buffer(vertices, indices.clone(), context),
+                    ModelType::Cube => Cube::to_buffer(vertices, indices.clone(), context),
                 };
                 ModelBuffers {
                     vertex_buffer,
                     index_buffer,
+                    index_count: indices.len() as u32,
                 }
             })
             .collect()
