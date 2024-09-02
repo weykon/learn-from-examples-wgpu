@@ -58,6 +58,7 @@ impl Game {
     fn list_painter(&mut self) {
         let context: Arc<Mutex<gfx::GfxContext>> = self.context.clone();
         let mut studio_var = studio::Studio::new(context);
+        studio_var.add_scene::<studio::try_simple_2d_light_shadow::Simple2DLightShadow, _>(());
         studio_var.add_scene::<studio::shader_playgroud_scene::ShaderPlaygroundScene, _>(());
         studio_var.add_scene::<studio::depth_buffer_example::DepthBufferExample, _>(());
         studio_var.add_scene::<studio::circle_instances::CircleInstancesScene, _>(());
